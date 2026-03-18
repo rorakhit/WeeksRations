@@ -21,7 +21,6 @@ An AI-powered weekly meal planner that generates 7 dinners, builds a grocery lis
 | Veggies | Must be well-seasoned — roasted, charred, glazed (no plain steamed) |
 | Grocery strategy | Minimise total items, reuse ingredients across meals, use full pack sizes |
 | Salads | Use salad kits, not plain lettuce |
-| No specialty items | No harissa, miso, nduja — use accessible substitutes |
 
 ### Dislikes (never included)
 
@@ -53,31 +52,3 @@ An AI-powered weekly meal planner that generates 7 dinners, builds a grocery lis
 | `POST /regenerate` | Swap one meal (body: `{"meal_index": 0, "disliked": "salmon"}`) |
 | `GET /health` | Server status + scheduler info |
 
-## Deployment (Railway)
-
-Runs on [Railway](https://railway.app) as an always-on Dockerfile service.
-
-### Environment variables
-
-| Variable | Description |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | Claude API key for meal generation |
-| `RESEND_API_KEY` | Resend API key for email delivery |
-| `NOTIFY_EMAIL` | Email to send meal plans to |
-| `EMAIL_FROM` | (optional) Sender address, defaults to `onboarding@resend.dev` |
-
-### Deploy
-
-1. Connect the GitHub repo to Railway
-2. Railway auto-detects the `Dockerfile` and deploys
-3. Add the env vars above in the Railway dashboard
-4. Generate a public domain in Railway networking settings
-
-## Local development
-
-```bash
-pip install -r requirements.txt
-cp .env.example .env  # fill in credentials
-python grocery_app.py
-# → http://localhost:8001
-```
