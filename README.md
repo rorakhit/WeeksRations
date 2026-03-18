@@ -13,23 +13,7 @@ An AI-powered weekly meal planner that generates 7 dinners, builds a grocery lis
 
 ## Meal preferences
 
-| Rule | Details |
-|------|---------|
-| Servings | 2 people |
-| Structure | 1 protein + 2 vegetable sides |
-| Style | Flavorful, bold seasoning, not too complicated |
-| Veggies | Must be well-seasoned — roasted, charred, glazed (no plain steamed) |
-| Grocery strategy | Minimise total items, reuse ingredients across meals, use full pack sizes |
-| Salads | Use salad kits, not plain lettuce |
-
-### Dislikes (never included)
-
-- Arugula
-- Tuna salad
-- Pickled anything
-- Raw/uncooked onions
-- Feta cheese
-- Bone-in chicken (always boneless thighs or breasts)
+Personal taste preferences, dislikes, and grocery strategy are baked into the generation prompts.
 
 ## Features
 
