@@ -1,0 +1,5 @@
+anthropic
+apscheduler
+flask
+python-dotenv
+resend
