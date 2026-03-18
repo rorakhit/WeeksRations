@@ -67,6 +67,7 @@ GENERATION_PROMPT = """Generate a weekly meal plan (Monday–Sunday dinners) for
 
 **Dislikes (never include):**
 - Arugula, Tuna salad, Pickled anything, Raw/uncooked onions, Feta cheese
+- Bone-in chicken — always use boneless (thighs or breasts)
 
 **Grocery Strategy:**
 - Minimize total groceries — reuse ingredients across meals throughout the week
@@ -78,6 +79,8 @@ GENERATION_PROMPT = """Generate a weekly meal plan (Monday–Sunday dinners) for
 - Flavorful and satisfying but not technically complicated
 - Vary spice profiles so reused ingredients feel like different meals
 - Emphasize bold, well-seasoned flavors
+- Vegetable sides must be flavorful — roast, char, glaze, or season them well (no plain steamed veggies)
+- Examples of good sides: garlic-parmesan roasted broccoli, honey-glazed carrots, charred lemon asparagus, cajun corn, sesame green beans
 
 Return ONLY a JSON object with no markdown formatting:
 {
@@ -672,7 +675,8 @@ Rules:
 - Flavorful and satisfying but not technically complicated
 - All ingredients must be available at a standard Market Basket supermarket
 - No specialty items (no harissa, miso, nduja — use accessible substitutes)
-- NEVER include: arugula, tuna salad, pickled anything, raw/uncooked onions, or feta cheese
+- NEVER include: arugula, tuna salad, pickled anything, raw/uncooked onions, feta cheese, or bone-in chicken
+- Vegetable sides must be flavorful — roast, char, glaze, or season them (no plain steamed veggies)
 - When possible, reuse ingredients already in this week's meal plan to minimize waste
 - Use full grocery store pack sizes across the week (e.g. if chicken thighs come 6 per pack, plan to use all 6 across meals)
 - For salads, use salad kits instead of plain lettuce
