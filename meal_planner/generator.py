@@ -29,6 +29,7 @@ GENERATION_PROMPT = """Generate a weekly meal plan (Monday–Sunday dinners) for
 - Emphasize bold, well-seasoned flavors
 - Vegetable sides must be flavorful — roast, char, glaze, or season them well (no plain steamed veggies)
 - Examples of good sides: garlic-parmesan roasted broccoli, honey-glazed carrots, charred lemon asparagus, cajun corn, sesame green beans
+- For proteins, prefer overnight marinades where it makes sense (e.g. chicken thighs, skirt steak, pork) — note this in the description so the cook knows to prep the night before
 
 Return ONLY a JSON object with no markdown formatting:
 {
@@ -54,6 +55,7 @@ Rules:
 - All ingredients must be available at a standard Market Basket supermarket
 - NEVER include: arugula, tuna salad, pickled anything, raw/uncooked onions, feta cheese, or bone-in chicken
 - Vegetable sides must be flavorful — roast, char, glaze, or season them (no plain steamed veggies)
+- For proteins, prefer overnight marinades where it makes sense (e.g. chicken thighs, skirt steak, pork) — note this in the description so the cook knows to prep the night before
 - When possible, reuse ingredients already in this week's meal plan to minimize waste
 - Use full grocery store pack sizes across the week (e.g. if chicken thighs come 6 per pack, plan to use all 6 across meals)
 - For salads, use salad kits instead of plain lettuce
