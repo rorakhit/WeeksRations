@@ -19,7 +19,7 @@ def index():
         week_of=data.get("week_of", "—"),
         meals=data.get("meals", []),
         snacks=data.get("snacks", []),
-        all_ingredients=data.get("all_ingredients", []),
+        all_ingredients=data.get("all_ingredients") if isinstance(data.get("all_ingredients"), dict) else {"Other": data.get("all_ingredients", [])},
     )
 
 
