@@ -85,6 +85,8 @@ def rebuild_all_ingredients(meals):
 
     for meal in meals:
         for ing in meal.get("ingredients", []):
+            if "from existing" in ing.lower():
+                continue
             name, qty, unit = _parse_ingredient(ing)
             key = (name.lower(), unit.lower())
 
