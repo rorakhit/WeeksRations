@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Meal Plan & Grocery List</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; }
@@ -27,6 +28,8 @@
     .meal-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
     .meal-card .day { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: 6px; }
     .meal-card .name { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .meal-card .name a { color: inherit; text-decoration: none; }
+    .meal-card .name a:hover { color: #2563eb; text-decoration: underline; }
     .meal-card .desc { font-size: 13px; color: #475569; line-height: 1.5; }
 
     .btn-regen {
@@ -146,7 +149,11 @@
     {% for meal in meals %}
     <div class="meal-card" id="card-{{ loop.index0 }}">
       <div class="day">{{ meal.day }}</div>
-      <div class="name">{{ meal.name }}</div>
+      <div class="name">
+        {% if meal.name != '—' %}
+        <a href="/recipe/{{ meal.day | lower }}">{{ meal.name }}</a>
+        {% else %}{{ meal.name }}{% endif %}
+      </div>
       <div class="desc">{{ meal.description }}</div>
       <button class="btn-regen" onclick="toggleRegenForm({{ loop.index0 }})">
         ↺ Regenerate

@@ -1,15 +1,51 @@
-import calendar
 import logging
+import random
 from datetime import datetime, timedelta
 
 import anthropic
 
 from .config import ANTHROPIC_API_KEY, ET
-from .models import load_plan, parse_ai_json, rebuild_all_ingredients, save_plan
+from .models import load_history, load_plan, parse_ai_json, rebuild_all_ingredients, save_history, save_plan
+
+RECIPE_PROMPT = """Write a clear, practical recipe for "{name}" for 2 people.
+
+Ingredients already decided:
+{ingredients}
+
+Return ONLY a JSON object with no markdown formatting:
+{{
+  "prep_time": "X minutes",
+  "cook_time": "X minutes",
+  "steps": [
+    "Step text...",
+    "Step text..."
+  ],
+  "tip": "One optional tip (marinating timing, make-ahead note, etc.). Omit the key if there is no useful tip."
+}}
+
+Steps should be clear and numbered in sequence. Each step is one sentence or two at most. Assume a competent home cook."""
 
 log = logging.getLogger("meal-planner")
 
+CUISINE_THEMES = [
+    "Mediterranean (Greek, Italian, Spanish, Turkish influences)",
+    "Mexican and Tex-Mex",
+    "East Asian (Chinese, Japanese, or Korean)",
+    "Southeast Asian (Thai or Vietnamese)",
+    "Indian subcontinent (curries, tandoori, dal, etc.)",
+    "American comfort and BBQ (Southern, smokehouse, diner classics)",
+    "Middle Eastern (Lebanese, Persian, or Israeli)",
+    "French bistro and Provençal",
+    "Latin American (Peruvian, Argentine, or Brazilian)",
+    "Japanese izakaya and street food",
+    "Korean BBQ and banchan-style sides",
+    "Italian trattoria",
+]
+
 GENERATION_PROMPT = """Generate a weekly meal plan (Monday–Sunday dinners) for 2 people.
+
+**This week's cuisine theme: {cuisine_theme}**
+Lean into this style for most meals — mix of proteins and preparations within the theme. A couple of meals can diverge if they fit naturally, but the week should feel cohesive and intentional around this theme.
 
 **Meal Structure:**
 - Each dinner = 1 protein + 2 vegetable sides
@@ -19,7 +55,7 @@ GENERATION_PROMPT = """Generate a weekly meal plan (Monday–Sunday dinners) for
 - Bone-in chicken — always use boneless (thighs or breasts)
 
 **Grocery Strategy:**
-- Minimize total groceries — reuse ingredients across meals throughout the week
+- Minimize total groceries for this week — reuse ingredients across meals within the week
 - Use full pack sizes (e.g. if chicken thighs come in a 6-pack, plan 2-3 chicken meals to use them all)
 - For salads, use salad kits instead of plain lettuce
 
@@ -31,19 +67,22 @@ GENERATION_PROMPT = """Generate a weekly meal plan (Monday–Sunday dinners) for
 - Examples of good sides: garlic-parmesan roasted broccoli, honey-glazed carrots, charred lemon asparagus, cajun corn, sesame green beans
 - For proteins, prefer overnight marinades where it makes sense (e.g. chicken thighs, skirt steak, pork) — note this in the description so the cook knows to prep the night before
 
+**Do not repeat any of these recently served meals:**
+{recent_meals}
+
 Return ONLY a JSON object with no markdown formatting:
-{
+{{
   "week_of": "WEEK_OF_DATE",
   "meals": [
-    {
+    {{
       "day": "Monday",
       "name": "Dish Name",
       "description": "One sentence describing the dish. Serves 2.",
       "ingredients": ["ingredient x qty", "ingredient x qty"]
-    }
+    }}
   ],
   "snacks": ["snack idea 1", "snack idea 2", "snack idea 3"]
-}
+}}
 
 Include all 7 days (Monday–Sunday). Each meal must have ingredients with quantities for 2 servings."""
 
@@ -56,7 +95,7 @@ Rules:
 - NEVER include: arugula, tuna salad, pickled anything, raw/uncooked onions, feta cheese, or bone-in chicken
 - Vegetable sides must be flavorful — roast, char, glaze, or season them (no plain steamed veggies)
 - For proteins, prefer overnight marinades where it makes sense (e.g. chicken thighs, skirt steak, pork) — note this in the description so the cook knows to prep the night before
-- When possible, reuse ingredients already in this week's meal plan to minimize waste
+- When possible, reuse ingredients already in this week's meal plan to minimize waste within the week
 - Use full grocery store pack sizes across the week (e.g. if chicken thighs come 6 per pack, plan to use all 6 across meals)
 - For salads, use salad kits instead of plain lettuce
 {disliked_note}
@@ -71,6 +110,24 @@ Return ONLY a JSON object with no markdown formatting:
 }}"""
 
 
+def _pick_cuisine_theme(history: list) -> str:
+    """Pick a cuisine theme, avoiding the last 2 weeks' themes if stored."""
+    recent_themes = [w.get("cuisine_theme") for w in history[-2:] if w.get("cuisine_theme")]
+    available = [t for t in CUISINE_THEMES if t not in recent_themes]
+    if not available:
+        available = CUISINE_THEMES
+    return random.choice(available)
+
+
+def _format_recent_meals(history: list) -> str:
+    if not history:
+        return "None — this is the first week, so feel free to start anywhere."
+    lines = []
+    for week in history:
+        lines.append(f"  Week of {week['week_of']}: {', '.join(week['meals'])}")
+    return "\n".join(lines)
+
+
 def generate_meal_plan():
     """Call Claude to generate a full weekly meal plan."""
     now = datetime.now(ET)
@@ -80,20 +137,62 @@ def generate_meal_plan():
     next_monday = now.date() + timedelta(days=days_until_monday)
     week_of = next_monday.strftime("%B %-d, %Y")
 
-    prompt = GENERATION_PROMPT.replace("WEEK_OF_DATE", week_of)
+    history = load_history()
+    cuisine_theme = _pick_cuisine_theme(history)
+    recent_meals = _format_recent_meals(history)
+
+    prompt = (
+        GENERATION_PROMPT
+        .replace("WEEK_OF_DATE", week_of)
+        .replace("{cuisine_theme}", cuisine_theme)
+        .replace("{recent_meals}", recent_meals)
+    )
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-sonnet-4-6",
         max_tokens=2048,
         messages=[{"role": "user", "content": prompt}],
     )
 
     plan = parse_ai_json(message.content[0].text)
     plan["all_ingredients"] = rebuild_all_ingredients(plan.get("meals", []))
+    plan["cuisine_theme"] = cuisine_theme
     save_plan(plan)
-    log.info(f"Generated meal plan for week of {week_of}")
+
+    meal_names = [m["name"] for m in plan.get("meals", []) if m["name"] != "—"]
+    save_history(week_of, meal_names, cuisine_theme)
+
+    log.info(f"Generated meal plan for week of {week_of} (theme: {cuisine_theme})")
     return plan
+
+
+def generate_recipe(day: str) -> dict:
+    """Generate and cache a recipe for the given day's meal."""
+    plan = load_plan()
+    meals = plan.get("meals", [])
+
+    meal = next((m for m in meals if m["day"].lower() == day.lower()), None)
+    if not meal or meal["name"] == "—":
+        raise ValueError(f"No meal found for {day}")
+
+    if meal.get("recipe"):
+        return meal["recipe"]
+
+    ingredients_text = "\n".join(f"- {i}" for i in meal.get("ingredients", []))
+    prompt = RECIPE_PROMPT.format(name=meal["name"], ingredients=ingredients_text)
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    recipe = parse_ai_json(message.content[0].text)
+    meal["recipe"] = recipe
+    save_plan(plan)
+    return recipe
 
 
 def regenerate_meal(meal_index: int, disliked: str):
@@ -119,13 +218,14 @@ def regenerate_meal(meal_index: int, disliked: str):
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-sonnet-4-6",
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
 
     new_meal = parse_ai_json(message.content[0].text)
 
+    new_meal.pop("recipe", None)
     meals[meal_index] = new_meal
     plan["meals"] = meals
     plan["all_ingredients"] = rebuild_all_ingredients(meals)

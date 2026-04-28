@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ meal.name }} — Recipe</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; }
+
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      padding: 28px 36px; color: white;
+    }
+    .header .back {
+      font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+      color: #64a7d8; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+      margin-bottom: 14px;
+    }
+    .header .back:hover { color: #93c5fd; }
+    .header .day-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; margin-bottom: 4px; }
+    .header h1 { font-size: 26px; font-weight: 700; }
+    .header .week { color: #64a7d8; font-size: 14px; margin-top: 6px; }
+    .header .desc { color: #cbd5e1; font-size: 14px; margin-top: 10px; line-height: 1.6; max-width: 600px; }
+
+    .meta-row {
+      display: flex; gap: 24px; margin-top: 16px;
+    }
+    .meta-item { font-size: 13px; color: #94a3b8; }
+    .meta-item strong { color: white; display: block; font-size: 15px; font-weight: 700; }
+
+    .container { max-width: 720px; margin: 32px auto; padding: 0 20px 60px; }
+
+    .section { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .section h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+
+    .ingredient-list { list-style: none; }
+    .ingredient-list li {
+      font-size: 14px; color: #374151; padding: 7px 0;
+      border-bottom: 1px solid #f8fafc; display: flex; align-items: baseline; gap: 8px;
+    }
+    .ingredient-list li:last-child { border-bottom: none; }
+    .ingredient-list li::before { content: '·'; color: #2563eb; font-weight: 900; font-size: 16px; flex-shrink: 0; }
+
+    .steps-list { list-style: none; counter-reset: steps; }
+    .steps-list li {
+      counter-increment: steps;
+      display: flex; gap: 14px; padding: 12px 0;
+      border-bottom: 1px solid #f8fafc; font-size: 14px; color: #374151; line-height: 1.6;
+    }
+    .steps-list li:last-child { border-bottom: none; }
+    .steps-list li::before {
+      content: counter(steps);
+      background: #2563eb; color: white;
+      font-size: 11px; font-weight: 700;
+      min-width: 22px; height: 22px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+
+    .tip {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+      padding: 14px 18px; font-size: 14px; color: #1d4ed8; line-height: 1.6;
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .tip-icon { font-size: 16px; flex-shrink: 0; }
+
+    @media print {
+      body { background: white; }
+      .header { background: none !important; color: #0f172a; padding: 20px 0; }
+      .header .back { display: none; }
+      .header .day-label { color: #64748b; }
+      .header h1 { color: #0f172a; }
+      .header .week, .header .desc { color: #475569; }
+      .meta-item { color: #475569; }
+      .meta-item strong { color: #0f172a; }
+      .container { margin: 0; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back" href="/">← Back to meal plan</a>
+  <div class="day-label">{{ meal.day }} · Week of {{ week_of }}</div>
+  <h1>{{ meal.name }}</h1>
+  <div class="desc">{{ meal.description }}</div>
+  <div class="meta-row">
+    {% if recipe.prep_time %}
+    <div class="meta-item"><strong>{{ recipe.prep_time }}</strong> Prep</div>
+    {% endif %}
+    {% if recipe.cook_time %}
+    <div class="meta-item"><strong>{{ recipe.cook_time }}</strong> Cook</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Ingredients</h2>
+    <ul class="ingredient-list">
+      {% for item in meal.ingredients %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Instructions</h2>
+    <ol class="steps-list">
+      {% for step in recipe.steps %}
+      <li>{{ step }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  {% if recipe.tip %}
+  <div class="tip">
+    <span class="tip-icon">💡</span>
+    <span>{{ recipe.tip }}</span>
+  </div>
+  {% endif %}
+
+</div>
+
+</body>
+</html>

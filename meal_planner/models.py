@@ -1,7 +1,27 @@
 import json
 import re
 
-from .config import MEAL_PLAN_FILE, PLACEHOLDER
+from .config import MEAL_HISTORY_FILE, MEAL_PLAN_FILE, PLACEHOLDER
+
+HISTORY_WEEKS_TO_KEEP = 4
+
+
+def load_history() -> list:
+    """Load meal history (list of recent weeks, oldest first)."""
+    if MEAL_HISTORY_FILE.exists():
+        with open(MEAL_HISTORY_FILE) as f:
+            return json.load(f)
+    return []
+
+
+def save_history(week_of: str, meal_names: list[str], cuisine_theme: str = ""):
+    """Append this week to history, keeping only the most recent HISTORY_WEEKS_TO_KEEP weeks."""
+    history = load_history()
+    history.append({"week_of": week_of, "meals": meal_names, "cuisine_theme": cuisine_theme})
+    history = history[-HISTORY_WEEKS_TO_KEEP:]
+    MEAL_HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(MEAL_HISTORY_FILE, "w") as f:
+        json.dump(history, f, indent=2)
 
 
 def load_plan():
