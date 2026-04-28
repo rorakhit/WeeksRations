@@ -84,7 +84,16 @@ Return ONLY a JSON object with no markdown formatting:
     }
   ],
   "snacks": ["snack idea 1", "snack idea 2", "snack idea 3"],
-  "grocery_list": ["item — qty", "item — qty"]
+  "grocery_list": {
+    "Produce": ["item — qty"],
+    "Meat & Seafood": ["item — qty"],
+    "Dairy & Eggs": ["item — qty"],
+    "Pantry & Dry Goods": ["item — qty"],
+    "Canned & Jarred": ["item — qty"],
+    "Bread & Bakery": ["item — qty"],
+    "Frozen": ["item — qty"],
+    "Other": ["item — qty"]
+  }
 }
 
 Include all 7 days (Monday–Sunday). Each meal must have ingredients with quantities for 2 servings."""
@@ -122,26 +131,25 @@ def _pick_cuisine_theme(history: list) -> str:
     return random.choice(available)
 
 
-def _crosscheck_grocery_list(grocery_list: list, meals: list) -> list:
+def _crosscheck_grocery_list(grocery_list: dict, meals: list) -> dict:
     """Ensure every per-meal ingredient name is covered in Claude's grocery list.
 
-    Uses substring matching — if the ingredient name appears anywhere in any
-    grocery list item, it's considered covered. Appends any uncovered ingredients
-    in raw form so nothing gets silently dropped.
+    Uses substring matching against all items across all aisles. Appends any
+    uncovered ingredients to the 'Other' section so nothing gets silently dropped.
     """
-    grocery_lower = " | ".join(grocery_list).lower()
+    all_items = [item for items in grocery_list.values() for item in items]
 
     for meal in meals:
         for ing in meal.get("ingredients", []):
             if " from " in ing.lower():
                 continue
-            # Extract just the name part (before " x ")
             name = ing.split(" x ")[0].strip().lower()
-            if not any(name in item.lower() for item in grocery_list):
-                grocery_list.append(ing)
+            if not any(name in item.lower() for item in all_items):
+                grocery_list.setdefault("Other", []).append(ing)
                 log.warning(f"Grocery cross-check: added missing ingredient '{ing}'")
 
-    return grocery_list
+    # Remove empty sections
+    return {k: v for k, v in grocery_list.items() if v}
 
 
 def _format_recent_meals(history: list) -> str:
@@ -181,9 +189,9 @@ def generate_meal_plan():
     )
 
     plan = parse_ai_json(message.content[0].text)
-    grocery_list = plan.get("grocery_list") or []
-    if not grocery_list:
-        grocery_list = rebuild_all_ingredients(plan.get("meals", []))
+    grocery_list = plan.get("grocery_list")
+    if not isinstance(grocery_list, dict) or not grocery_list:
+        grocery_list = {"Other": rebuild_all_ingredients(plan.get("meals", []))}
     plan["all_ingredients"] = _crosscheck_grocery_list(grocery_list, plan.get("meals", []))
     plan["cuisine_theme"] = cuisine_theme
     save_plan(plan)
@@ -256,7 +264,10 @@ def regenerate_meal(meal_index: int, disliked: str):
     new_meal.pop("recipe", None)
     meals[meal_index] = new_meal
     plan["meals"] = meals
-    plan["all_ingredients"] = _crosscheck_grocery_list(rebuild_all_ingredients(meals), meals)
+    grocery_list = plan.get("all_ingredients")
+    if not isinstance(grocery_list, dict) or not grocery_list:
+        grocery_list = {"Other": rebuild_all_ingredients(meals)}
+    plan["all_ingredients"] = _crosscheck_grocery_list(grocery_list, meals)
     save_plan(plan)
 
     return new_meal

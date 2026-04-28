@@ -69,6 +69,8 @@
 
     .panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
     .panel h3 { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+    .aisle-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #2563eb; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px solid #eff6ff; }
+    .aisle-header:first-child { margin-top: 0; }
 
     .ingredient-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f8fafc; cursor: pointer; }
     .ingredient-item:last-child { border-bottom: none; }
@@ -183,13 +185,17 @@
     <div class="panel">
       <h3>What do you already have? <span class="badge" id="have-count">0</span></h3>
       <div id="ingredient-list">
-        {% for item in all_ingredients %}
-        <div class="ingredient-item" id="row-{{ loop.index }}"
-             onclick="toggle('{{ item|replace("'","\\'")|replace('"','\\"') }}', {{ loop.index }})">
-          <input type="checkbox" id="chk-{{ loop.index }}"
-                 onclick="event.stopPropagation(); toggle('{{ item|replace("'","\\'")|replace('"','\\"') }}', {{ loop.index }})">
-          <label for="chk-{{ loop.index }}">{{ item }}</label>
-        </div>
+        {% set ns = namespace(idx=0) %}
+        {% for aisle, items in all_ingredients.items() %}
+          {% for item in items %}
+          {% set ns.idx = ns.idx + 1 %}
+          <div class="ingredient-item" id="row-{{ ns.idx }}"
+               onclick="toggle('{{ item|replace("'","\\'")|replace('"','\\"') }}', {{ ns.idx }})">
+            <input type="checkbox" id="chk-{{ ns.idx }}"
+                   onclick="event.stopPropagation(); toggle('{{ item|replace("'","\\'")|replace('"','\\"') }}', {{ ns.idx }})">
+            <label for="chk-{{ ns.idx }}">{{ item }}</label>
+          </div>
+          {% endfor %}
         {% endfor %}
         {% if not all_ingredients %}
         <p class="empty-msg">No meal plan loaded yet — check back after Sunday.</p>
@@ -199,10 +205,16 @@
     </div>
 
     <div class="panel">
-      <h3>What you need to buy <span class="badge" id="need-count">{{ all_ingredients|length }}</span></h3>
+      {% set total = all_ingredients.values()|sum(attribute='__len__') if all_ingredients else 0 %}
+      <h3>What you need to buy <span class="badge" id="need-count">{{ total }}</span></h3>
       <div class="need-list" id="need-list">
-        {% for item in all_ingredients %}
-        <div class="need-item" id="need-{{ loop.index }}">{{ item }}</div>
+        {% set ns = namespace(idx=0) %}
+        {% for aisle, items in all_ingredients.items() %}
+          <div class="aisle-header">{{ aisle }}</div>
+          {% for item in items %}
+          {% set ns.idx = ns.idx + 1 %}
+          <div class="need-item" id="need-{{ ns.idx }}">{{ item }}</div>
+          {% endfor %}
         {% endfor %}
         {% if not all_ingredients %}
         <p class="empty-msg">Your grocery list will appear here.</p>
@@ -279,11 +291,16 @@
   }
 
   function copyList() {
-    const items = [];
-    document.querySelectorAll('.need-item').forEach(el => {
-      if (el.style.display !== 'none') items.push(el.textContent.trim());
+    const lines = [];
+    document.querySelectorAll('.aisle-header, .need-item').forEach(el => {
+      if (el.style.display === 'none') return;
+      if (el.classList.contains('aisle-header')) {
+        lines.push('\n' + el.textContent.trim().toUpperCase());
+      } else {
+        lines.push('  ' + el.textContent.trim());
+      }
     });
-    navigator.clipboard.writeText(items.join('\n')).then(() => {
+    navigator.clipboard.writeText(lines.join('\n').trim()).then(() => {
       const btn = document.getElementById('copy-btn');
       btn.textContent = '✓ Copied!';
       btn.classList.add('copied');
