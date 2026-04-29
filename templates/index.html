@@ -6,184 +6,365 @@
   <title>Meal Plan & Grocery List</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>">
   <style>
+    /* ── Themes ─────────────────────────────────────────────── */
+    :root {
+      --bg:          #1a2010;
+      --bg-card:     #242d16;
+      --bg-header:   #2e1a08;
+      --bg-input:    #1a2010;
+      --accent:      #c4622d;
+      --accent-2:    #d4954a;
+      --text:        #f2ead8;
+      --text-muted:  #b8a98a;
+      --border:      #3a3820;
+      --badge-bg:    #c4622d22;
+      --badge-text:  #d4954a;
+      --step-bg:     #c4622d;
+      --tip-bg:      #2e2a14;
+      --tip-border:  #d4954a44;
+      --tip-text:    #d4954a;
+      --check-color: #d4954a;
+      --aisle-color: #c4622d;
+    }
+
+    /* ── Reset & base ───────────────────────────────────────── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; }
+    body {
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+    }
 
+    /* ── Header ─────────────────────────────────────────────── */
     .header {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-      padding: 28px 36px; color: white;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 36px 24px;
     }
-    .header p { color: #94a3b8; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
-    .header h1 { font-size: 26px; font-weight: 700; }
-    .header .week { color: #64a7d8; font-size: 15px; margin-top: 6px; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .header-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;
+    }
+    .header h1 { font-size: 28px; font-weight: 800; letter-spacing: -.01em; }
+    .header .week { color: var(--text-muted); font-size: 13px; margin-top: 5px; }
+    .header .theme-tag {
+      display: inline-block; margin-top: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--accent-2); background: var(--badge-bg);
+      border: 1px solid var(--accent-2)44; border-radius: 4px; padding: 3px 10px;
+    }
+    .header-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .btn-header {
+      padding: 8px 16px; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+      border-radius: 6px; cursor: pointer; border: 1px solid; transition: all .15s; white-space: nowrap;
+    }
+    .btn-generate {
+      background: var(--accent); color: var(--text); border-color: var(--accent);
+    }
+    .btn-generate:hover { filter: brightness(1.1); }
+    .btn-generate.loading { opacity: .6; pointer-events: none; }
 
-    .container { max-width: 900px; margin: 32px auto; padding: 0 20px 60px; }
-    h2 { font-size: 17px; font-weight: 700; color: #0f172a; margin: 32px 0 14px; }
+    /* ── Container ──────────────────────────────────────────── */
+    .container { max-width: 860px; margin: 0 auto; padding: 36px 20px 80px; }
 
-    .meals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 16px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Meal cards ─────────────────────────────────────────── */
+    .meals { display: flex; flex-direction: column; gap: 20px; margin-bottom: 40px; }
+
     .meal-card {
-      background: white; border: 1px solid #e2e8f0; border-radius: 12px;
-      padding: 16px; transition: box-shadow .15s; position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
     }
-    .meal-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
-    .meal-card .day { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: 6px; }
-    .meal-card .name { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
-    .meal-card .name a { color: inherit; text-decoration: none; }
-    .meal-card .name a:hover { color: #2563eb; text-decoration: underline; }
-    .meal-card .desc { font-size: 13px; color: #475569; line-height: 1.5; }
 
-    .btn-regen {
-      margin-top: 12px; width: 100%; padding: 7px 10px;
-      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 7px;
-      font-size: 12px; font-weight: 600; color: #475569;
-      cursor: pointer; transition: background .15s;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
+    .meal-card-header {
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
     }
-    .btn-regen:hover { background: #e2e8f0; color: #0f172a; }
+    .meal-name { font-size: 22px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; }
+    .meal-desc { font-size: 13px; color: var(--text-muted); margin-top: 6px; font-style: italic; line-height: 1.5; }
+    .meal-time {
+      flex-shrink: 0; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--badge-text);
+      background: var(--badge-bg); border: 1px solid var(--badge-text)44;
+      border-radius: 6px; padding: 5px 10px; white-space: nowrap;
+    }
+
+    .meal-card-body {
+      display: grid; grid-template-columns: 220px 1fr;
+      gap: 0;
+    }
+    @media (max-width: 640px) { .meal-card-body { grid-template-columns: 1fr; } }
+
+    .ingredients-col {
+      padding: 20px 20px 20px 24px;
+      border-right: 1px solid var(--border);
+    }
+    @media (max-width: 640px) { .ingredients-col { border-right: none; border-bottom: 1px solid var(--border); } }
+
+    .col-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+    }
+    .ingredient-list { list-style: none; }
+    .ingredient-list li {
+      font-size: 12.5px; color: var(--text-muted); padding: 4px 0;
+      border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: baseline;
+    }
+    .ingredient-list li:last-child { border-bottom: none; }
+    .ingredient-list li::before { content: '·'; color: var(--accent); font-weight: 900; flex-shrink: 0; }
+
+    .recipe-col { padding: 20px 24px 20px 20px; }
+
+    .steps-list { list-style: none; counter-reset: steps; }
+    .steps-list li {
+      counter-increment: steps;
+      display: flex; gap: 12px;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+      font-size: 13px; color: var(--text); line-height: 1.55;
+    }
+    .steps-list li:last-child { border-bottom: none; }
+    .steps-list li::before {
+      content: counter(steps);
+      background: var(--step-bg); color: var(--bg);
+      font-size: 10px; font-weight: 800;
+      min-width: 20px; height: 20px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+
+    .meal-tip {
+      margin: 12px 24px 0;
+      background: var(--tip-bg);
+      border: 1px solid var(--tip-border);
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 12.5px; color: var(--tip-text); line-height: 1.5;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+
+    .meal-card-footer {
+      padding: 14px 24px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-regen {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); padding: 7px 14px;
+      border-radius: 7px; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-regen:hover { border-color: var(--accent); color: var(--accent); }
     .btn-regen.loading { opacity: .6; pointer-events: none; }
 
     .regen-form { margin-top: 10px; display: none; }
-    .regen-form.open { display: block; }
+    .regen-form.open { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .regen-form input {
-      width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 7px;
-      font-size: 12px; color: #1e293b; outline: none;
+      flex: 1; min-width: 180px; padding: 8px 12px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 7px; font-size: 12px; color: var(--text); outline: none;
     }
-    .regen-form input:focus { border-color: #2563eb; }
-    .regen-form-actions { display: flex; gap: 6px; margin-top: 7px; }
+    .regen-form input:focus { border-color: var(--accent); }
+    .regen-form input::placeholder { color: var(--text-muted); }
     .btn-submit-regen {
-      flex: 1; padding: 7px; background: #2563eb; color: white;
-      border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer;
+      padding: 8px 14px; background: var(--accent); color: var(--text);
+      border: none; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;
     }
-    .btn-submit-regen:hover { background: #1d4ed8; }
     .btn-cancel-regen {
-      padding: 7px 12px; background: none; border: 1px solid #e2e8f0;
-      border-radius: 7px; font-size: 12px; color: #64748b; cursor: pointer;
+      padding: 8px 12px; background: transparent;
+      border: 1px solid var(--border); border-radius: 7px;
+      font-size: 12px; color: var(--text-muted); cursor: pointer;
     }
 
-    .snacks { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; }
-    .snack-item { font-size: 14px; color: #475569; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
-    .snack-item:last-child { border-bottom: none; }
+    /* ── Snacks ─────────────────────────────────────────────── */
+    .snacks { margin-bottom: 40px; }
+    .snack-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .snack-pill {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 999px; padding: 7px 16px;
+      font-size: 13px; color: var(--text-muted);
+    }
 
-    .grocery-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 600px) { .grocery-wrapper { grid-template-columns: 1fr; } }
+    /* ── Grocery list ───────────────────────────────────────── */
+    .grocery { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+    @media (max-width: 600px) { .grocery { grid-template-columns: 1fr; } }
 
-    .panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
-    .panel h3 { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
-    .aisle-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #2563eb; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px solid #eff6ff; }
+    .panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 22px;
+    }
+    .panel-title {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .badge {
+      background: var(--badge-bg); color: var(--badge-text);
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    }
+
+    .aisle-header {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--aisle-color);
+      margin: 14px 0 6px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--aisle-color)33;
+    }
     .aisle-header:first-child { margin-top: 0; }
 
-    .ingredient-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f8fafc; cursor: pointer; }
+    .ingredient-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
     .ingredient-item:last-child { border-bottom: none; }
-    .ingredient-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #2563eb; flex-shrink: 0; }
-    .ingredient-item label { font-size: 13px; color: #374151; cursor: pointer; flex: 1; }
-    .ingredient-item.checked label { text-decoration: line-through; color: #9ca3af; }
+    .ingredient-item input[type=checkbox] { accent-color: var(--check-color); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+    .ingredient-item label { font-size: 12.5px; color: var(--text-muted); cursor: pointer; flex: 1; }
+    .ingredient-item.checked label { text-decoration: line-through; opacity: .45; }
 
-    .need-list { min-height: 60px; }
-    .need-item { font-size: 13px; color: #1e293b; padding: 7px 0; border-bottom: 1px solid #f8fafc; display: flex; align-items: center; gap: 8px; }
+    .need-item {
+      font-size: 12.5px; color: var(--text-muted);
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+      display: flex; gap: 8px; align-items: baseline;
+    }
     .need-item:last-child { border-bottom: none; }
-    .need-item::before { content: '•'; color: #2563eb; font-weight: 700; }
-    .empty-msg { font-size: 13px; color: #94a3b8; padding: 12px 0; }
+    .need-item::before { content: '·'; color: var(--accent); font-weight: 900; flex-shrink: 0; }
 
     .btn-copy {
       margin-top: 14px; width: 100%; padding: 10px;
-      background: #2563eb; color: white; border: none;
-      border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: background .15s;
+      background: var(--accent); color: var(--text); border: none;
+      border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: filter .15s;
     }
-    .btn-copy:hover { background: #1d4ed8; }
-    .btn-copy.copied { background: #16a34a; }
+    .btn-copy:hover { filter: brightness(1.1); }
+    .btn-copy.copied { background: #2d6a2d; }
 
-    .btn-clear { background: none; border: 1px solid #e2e8f0; color: #64748b; padding: 8px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; margin-top: 10px; width: 100%; }
-    .btn-clear:hover { background: #f8fafc; }
+    .btn-clear {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); padding: 8px 14px;
+      border-radius: 8px; font-size: 12px; cursor: pointer;
+      margin-top: 10px; width: 100%;
+    }
+    .btn-clear:hover { border-color: var(--accent); color: var(--accent); }
 
-    .badge { display: inline-block; background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; margin-left: 6px; }
+    .empty-msg { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
 
+    /* ── Toast ──────────────────────────────────────────────── */
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: #0f172a; color: white; padding: 10px 20px; border-radius: 9999px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 22px; border-radius: 999px;
       font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .2s;
       pointer-events: none; z-index: 999;
     }
     .toast.show { opacity: 1; }
-
-    .btn-actions { display: flex; gap: 10px; margin-top: 14px; }
-    .btn-print, .btn-generate {
-      padding: 8px 16px;
-      background: rgba(255,255,255,.15); color: white; border: 1px solid rgba(255,255,255,.25);
-      border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: background .15s;
-    }
-    .btn-print:hover, .btn-generate:hover { background: rgba(255,255,255,.25); }
-    .btn-generate.loading { opacity: .6; pointer-events: none; }
-
-    @media print {
-      body { background: white; }
-      .header { background: none !important; color: #0f172a; padding: 20px 0; }
-      .header p { color: #64748b; }
-      .header h1 { color: #0f172a; }
-      .header .week { color: #475569; }
-      .btn-print, .btn-generate, .btn-regen, .regen-form, .grocery-wrapper,
-      .grocery-heading, .toast, .btn-actions { display: none !important; }
-      .container { margin: 0; padding: 0; }
-      .meals-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-      .meal-card { border: 1px solid #ccc; box-shadow: none; break-inside: avoid; }
-      .snacks { border: 1px solid #ccc; }
-      h2 { margin-top: 20px; }
-    }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <p>Weekly Meal Planner</p>
-  <h1>🍽️ Dinners This Week</h1>
-  <div class="week">Week of {{ week_of }}</div>
-  <div class="btn-actions">
-    <button class="btn-print" onclick="window.print()">Print Meal Plan</button>
-    <button class="btn-generate" id="btn-generate" onclick="generateNew()">↺ Generate New Plan</button>
+  <div class="header-top">
+    <div>
+      <div class="header-label">Weekly Meal Planner</div>
+      <h1>🍳 This Week's Dinners</h1>
+      <div class="week">Week of {{ week_of }}</div>
+      {% if cuisine_theme %}
+      <div class="theme-tag">{{ cuisine_theme }}</div>
+      {% endif %}
+    </div>
+    <div class="header-actions">
+      <button class="btn-header btn-generate" id="btn-generate" onclick="generateNew()">↺ Generate New Plan</button>
+    </div>
   </div>
 </div>
 
 <div class="container">
 
-  <h2>Dinners</h2>
-  <div class="meals-grid" id="meals-grid">
+  <div class="section-label">Dinners</div>
+  <div class="meals" id="meals-grid">
     {% for meal in meals %}
     <div class="meal-card" id="card-{{ loop.index0 }}">
-      <div class="day">{{ meal.day }}</div>
-      <div class="name">
-        {% if meal.name != '—' %}
-        <a href="/recipe/{{ meal.day | lower }}">{{ meal.name }}</a>
-        {% else %}{{ meal.name }}{% endif %}
+
+      <div class="meal-card-header">
+        <div>
+          <div class="meal-name">{{ meal.name }}</div>
+          <div class="meal-desc">{{ meal.description }}</div>
+        </div>
+        {% if meal.time %}
+        <div class="meal-time">{{ meal.time }}</div>
+        {% endif %}
       </div>
-      <div class="desc">{{ meal.description }}</div>
-      <button class="btn-regen" onclick="toggleRegenForm({{ loop.index0 }})">
-        ↺ Regenerate
-      </button>
-      <div class="regen-form" id="regen-form-{{ loop.index0 }}">
-        <input type="text" id="regen-input-{{ loop.index0 }}"
-               placeholder="What don't you like? e.g. salmon, avocado"
-               onkeydown="if(event.key==='Enter') submitRegen({{ loop.index0 }})">
-        <div class="regen-form-actions">
-          <button class="btn-submit-regen" onclick="submitRegen({{ loop.index0 }})">Regenerate</button>
+
+      {% if meal.name != '—' %}
+      <div class="meal-card-body">
+        <div class="ingredients-col">
+          <div class="col-label">Ingredients</div>
+          <ul class="ingredient-list">
+            {% for item in meal.ingredients %}
+            <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="recipe-col">
+          <div class="col-label">How to make it</div>
+          {% if meal.recipe %}
+          <ol class="steps-list">
+            {% for step in meal.recipe.steps %}
+            <li>{{ step }}</li>
+            {% endfor %}
+          </ol>
+          {% else %}
+          <p class="empty-msg">No recipe yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if meal.recipe and meal.recipe.tip %}
+      <div class="meal-tip">
+        <span>💡</span><span>{{ meal.recipe.tip }}</span>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <div class="meal-card-footer">
+        <button class="btn-regen" onclick="toggleRegenForm({{ loop.index0 }})">↺ Swap this meal</button>
+        <div class="regen-form" id="regen-form-{{ loop.index0 }}">
+          <input type="text" id="regen-input-{{ loop.index0 }}"
+                 placeholder="What don't you like? e.g. salmon, avocado"
+                 onkeydown="if(event.key==='Enter') submitRegen({{ loop.index0 }})">
+          <button class="btn-submit-regen" onclick="submitRegen({{ loop.index0 }})">Swap</button>
           <button class="btn-cancel-regen" onclick="toggleRegenForm({{ loop.index0 }})">Cancel</button>
         </div>
       </div>
+
     </div>
     {% endfor %}
   </div>
 
-  <h2>Snack Ideas</h2>
+  <div class="section-label">Snack Ideas</div>
   <div class="snacks">
-    {% for snack in snacks %}
-    <div class="snack-item">{{ snack }}</div>
-    {% endfor %}
+    <div class="snack-grid">
+      {% for snack in snacks %}
+      <div class="snack-pill">{{ snack }}</div>
+      {% endfor %}
+    </div>
   </div>
 
-  <h2 class="grocery-heading">Grocery List Builder</h2>
-  <div class="grocery-wrapper">
+  <div class="section-label">Grocery List</div>
+  <div class="grocery">
     <div class="panel">
-      <h3>What do you already have? <span class="badge" id="have-count">0</span></h3>
+      <div class="panel-title">
+        Already have <span class="badge" id="have-count">0</span>
+      </div>
       <div id="ingredient-list">
         {% set ns = namespace(idx=0) %}
         {% for aisle, items in all_ingredients.items() %}
@@ -198,15 +379,17 @@
           {% endfor %}
         {% endfor %}
         {% if not all_ingredients %}
-        <p class="empty-msg">No meal plan loaded yet — check back after Sunday.</p>
+        <p class="empty-msg">No plan yet — check back after Sunday.</p>
         {% endif %}
       </div>
       <button class="btn-clear" onclick="clearAll()">Clear all</button>
     </div>
 
     <div class="panel">
-      <h3>What you need to buy <span class="badge" id="need-count">{{ ingredient_count }}</span></h3>
-      <div class="need-list" id="need-list">
+      <div class="panel-title">
+        Need to buy <span class="badge" id="need-count">{{ ingredient_count }}</span>
+      </div>
+      <div id="need-list">
         {% set ns = namespace(idx=0) %}
         {% for aisle, items in all_ingredients.items() %}
           <div class="aisle-header">{{ aisle }}</div>
@@ -222,6 +405,7 @@
       <button class="btn-copy" id="copy-btn" onclick="copyList()">Copy grocery list</button>
     </div>
   </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -229,6 +413,7 @@
 <script>
   const STORAGE_KEY = 'groceries_checked_{{ week_of|replace(" ","_") }}';
   let checked = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+
 
   function showToast(msg) {
     const t = document.getElementById('toast');
@@ -296,7 +481,7 @@
       if (el.classList.contains('aisle-header')) {
         lines.push('\n' + el.textContent.trim().toUpperCase());
       } else {
-        lines.push('  ' + el.textContent.trim());
+        lines.push('  ' + el.textContent.trim().replace('·', '').trim());
       }
     });
     navigator.clipboard.writeText(lines.join('\n').trim()).then(() => {
@@ -320,31 +505,23 @@
     const disliked = input.value.trim();
     const btn = document.querySelector('#card-' + idx + ' .btn-regen');
 
-    btn.textContent = '↺ Regenerating…';
+    btn.textContent = '↺ Swapping…';
     btn.classList.add('loading');
 
     try {
       const res = await fetch('/regenerate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ meal_index: idx, disliked: disliked })
+        body: JSON.stringify({ meal_index: idx, disliked })
       });
       const data = await res.json();
-
       if (data.error) { showToast('Error: ' + data.error); return; }
-
-      document.querySelector('#card-' + idx + ' .name').textContent = data.name;
-      document.querySelector('#card-' + idx + ' .desc').textContent = data.description;
-      document.getElementById('regen-form-' + idx).classList.remove('open');
-      input.value = '';
-      showToast('✓ ' + data.day + ' updated!');
-
-      setTimeout(() => location.reload(), 1200);
-
+      showToast('✓ Meal swapped!');
+      setTimeout(() => location.reload(), 1000);
     } catch (e) {
       showToast('Something went wrong — try again');
     } finally {
-      btn.textContent = '↺ Regenerate';
+      btn.textContent = '↺ Swap this meal';
       btn.classList.remove('loading');
     }
   }
@@ -353,12 +530,11 @@
     const btn = document.getElementById('btn-generate');
     btn.textContent = '↺ Generating…';
     btn.classList.add('loading');
-
     try {
       const res = await fetch('/generate', { method: 'POST' });
       const data = await res.json();
       if (data.error) { showToast('Error: ' + data.error); return; }
-      showToast('✓ New meal plan generated!');
+      showToast('✓ New plan generated!');
       setTimeout(() => location.reload(), 1000);
     } catch (e) {
       showToast('Something went wrong — try again');

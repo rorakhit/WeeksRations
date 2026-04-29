@@ -52,6 +52,8 @@ Lean hard into this style. Every dish should feel intentional and cohesive withi
 **Do not repeat any of these recently served meals:**
 {recent_meals}
 
+For snacks, provide 6 ideas with enough variety to cover the week — mix of packaged snacks (e.g. chips, crackers, bars, jerky) and fresh options. Never suggest hummus.
+
 Also produce a consolidated grocery list for the week. Combine ingredients intelligently — sum quantities, use practical store pack sizes, write each item as you'd see it on a shopping list. Exclude pantry staples (salt, pepper, oil) unless a specific quantity matters.
 
 For each meal, also write a clear step-by-step recipe. Steps should be concise — one or two sentences each. Assume a competent home cook.
@@ -73,7 +75,7 @@ Return ONLY a JSON object with no markdown formatting:
       }
     }
   ],
-  "snacks": ["snack idea 1", "snack idea 2", "snack idea 3"],
+  "snacks": ["snack idea 1", "snack idea 2", "snack idea 3", "snack idea 4", "snack idea 5", "snack idea 6"],
   "grocery_list": {
     "Produce": ["item — qty"],
     "Meat & Seafood": ["item — qty"],
