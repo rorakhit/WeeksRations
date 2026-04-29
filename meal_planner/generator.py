@@ -241,10 +241,7 @@ def regenerate_meal(meal_index: int, disliked: str):
 
     meals[meal_index] = new_meal
     plan["meals"] = meals
-    grocery_list = plan.get("all_ingredients")
-    if not isinstance(grocery_list, dict) or not grocery_list:
-        grocery_list = {"Other": rebuild_all_ingredients(meals)}
-    plan["all_ingredients"] = _fix_grocery_categories(grocery_list)
+    plan["all_ingredients"] = _fix_grocery_categories({"Grocery List": rebuild_all_ingredients(meals)})
     save_plan(plan)
 
     return new_meal
