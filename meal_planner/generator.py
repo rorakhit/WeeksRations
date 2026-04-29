@@ -54,7 +54,17 @@ Lean hard into this style. Every dish should feel intentional and cohesive withi
 
 For snacks, provide 6 ideas with enough variety to cover the week — mix of packaged snacks (e.g. chips, crackers, bars, jerky) and fresh options. Never suggest hummus.
 
-Also produce a consolidated grocery list for the week. Combine ingredients intelligently — sum quantities, use practical store pack sizes, write each item as you'd see it on a shopping list. Exclude pantry staples (salt, pepper, oil) unless a specific quantity matters.
+Also produce a consolidated grocery list for the week. Combine ingredients intelligently — sum quantities, use practical store pack sizes, write each item as you'd see it on a shopping list. Be comprehensive — include every ingredient from every meal. Exclude only true pantry staples (salt, pepper, oil) unless a specific quantity matters.
+
+Categorise every item correctly:
+- Produce: fresh vegetables and fruits only
+- Meat & Seafood: ALL proteins — chicken, beef, pork, lamb, fish, shrimp, etc.
+- Dairy & Eggs: milk, butter, cheese, eggs, cream, yogurt
+- Pantry & Dry Goods: grains, pasta, rice, flour, spices, dried goods, sauces, condiments
+- Canned & Jarred: canned tomatoes, beans, coconut milk, broth, etc.
+- Bread & Bakery: bread, tortillas, pita, naan, rolls
+- Frozen: anything from the freezer aisle
+- Other: only items that genuinely don't fit above
 
 For each meal, also write a clear step-by-step recipe. Steps should be concise — one or two sentences each. Assume a competent home cook.
 
@@ -129,18 +139,32 @@ def _pick_cuisine_theme(history: list) -> str:
     return random.choice(available)
 
 
-def _crosscheck_grocery_list(grocery_list: dict, meals: list) -> dict:
-    """Ensure every per-meal ingredient name is covered in Claude's grocery list."""
-    all_items = [item for items in grocery_list.values() for item in items]
+_PROTEIN_KEYWORDS = {
+    "chicken", "beef", "pork", "lamb", "turkey", "salmon", "shrimp",
+    "tuna", "fish", "steak", "sausage", "bacon", "ground", "tilapia",
+    "cod", "halibut", "scallop", "crab", "lobster", "duck", "venison",
+}
 
-    for meal in meals:
-        for ing in meal.get("ingredients", []):
-            if " from " in ing.lower():
-                continue
-            name = ing.split(" x ")[0].strip().lower()
-            if not any(name in item.lower() for item in all_items):
-                grocery_list.setdefault("Other", []).append(ing)
-                log.warning(f"Grocery cross-check: added missing ingredient '{ing}'")
+def _fix_grocery_categories(grocery_list: dict) -> dict:
+    """Move obviously mislabeled proteins out of Produce into Meat & Seafood."""
+    produce = grocery_list.get("Produce", [])
+    meat = grocery_list.get("Meat & Seafood", [])
+    still_produce = []
+
+    for item in produce:
+        if any(kw in item.lower() for kw in _PROTEIN_KEYWORDS):
+            log.warning(f"Moving mislabeled protein out of Produce: {item}")
+            meat.append(item)
+        else:
+            still_produce.append(item)
+
+    if still_produce:
+        grocery_list["Produce"] = still_produce
+    elif "Produce" in grocery_list:
+        del grocery_list["Produce"]
+
+    if meat:
+        grocery_list["Meat & Seafood"] = meat
 
     return {k: v for k, v in grocery_list.items() if v}
 
@@ -185,7 +209,7 @@ def generate_meal_plan():
     grocery_list = plan.get("grocery_list")
     if not isinstance(grocery_list, dict) or not grocery_list:
         grocery_list = {"Other": rebuild_all_ingredients(plan.get("meals", []))}
-    plan["all_ingredients"] = _crosscheck_grocery_list(grocery_list, plan.get("meals", []))
+    plan["all_ingredients"] = _fix_grocery_categories(grocery_list)
     plan["cuisine_theme"] = cuisine_theme
     save_plan(plan)
 
@@ -230,7 +254,7 @@ def regenerate_meal(meal_index: int, disliked: str):
     grocery_list = plan.get("all_ingredients")
     if not isinstance(grocery_list, dict) or not grocery_list:
         grocery_list = {"Other": rebuild_all_ingredients(meals)}
-    plan["all_ingredients"] = _crosscheck_grocery_list(grocery_list, meals)
+    plan["all_ingredients"] = _fix_grocery_categories(grocery_list)
     save_plan(plan)
 
     return new_meal
