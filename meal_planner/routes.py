@@ -28,7 +28,6 @@ def index():
         meals=data.get("meals", []),
         snacks=data.get("snacks", []),
         all_ingredients=all_ingredients,
-        ingredient_count=sum(len(v) for v in all_ingredients.values()),
     )
 
 

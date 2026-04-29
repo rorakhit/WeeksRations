@@ -362,9 +362,7 @@
   <div class="section-label">Grocery List</div>
   <div class="grocery">
     <div class="panel">
-      <div class="panel-title">
-        Already have <span class="badge" id="have-count">0</span>
-      </div>
+      <div class="panel-title">Already have</div>
       <div id="ingredient-list">
         {% set ns = namespace(idx=0) %}
         {% for aisle, items in all_ingredients.items() %}
@@ -386,9 +384,7 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">
-        Need to buy <span class="badge" id="need-count">{{ ingredient_count }}</span>
-      </div>
+      <div class="panel-title">Need to buy</div>
       <div id="need-list">
         {% set ns = namespace(idx=0) %}
         {% for aisle, items in all_ingredients.items() %}
@@ -435,7 +431,6 @@
         }
       });
     });
-    updateCounts();
   }
 
   function toggle(item, idx) {
@@ -454,14 +449,8 @@
       if (needEl) needEl.style.display = 'none';
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...checked]));
-    updateCounts();
   }
 
-  function updateCounts() {
-    const total = document.querySelectorAll('.ingredient-item').length;
-    document.getElementById('have-count').textContent = checked.size;
-    document.getElementById('need-count').textContent = total - checked.size;
-  }
 
   function clearAll() {
     checked.clear();
@@ -471,7 +460,6 @@
       row.querySelector('input').checked = false;
     });
     document.querySelectorAll('.need-item').forEach(el => el.style.display = '');
-    updateCounts();
   }
 
   function copyList() {
