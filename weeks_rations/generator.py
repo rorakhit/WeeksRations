@@ -276,6 +276,64 @@ def regenerate_meal(meal_index: int, disliked: str):
     return new_meal
 
 
+DEMO_PROMPT = """Generate a mini meal plan as a portfolio demo. Pick one cuisine theme from this list at random:
+Mediterranean, Mexican, East Asian, Southeast Asian, Indian, American comfort, Middle Eastern, French bistro, Italian.
+
+Generate exactly 1 dinner (protein + 2 sides) and 4 snack ideas.
+
+Rules:
+- Dinner must be interesting enough to order at a restaurant — bold, well-seasoned, never bland
+- Sides must be aggressively seasoned — roasted, charred, glazed. No plain steamed anything.
+- No arugula, tuna salad, pickled anything, raw/uncooked onions, feta cheese, or bone-in chicken
+- Serves 2 people — scale all quantities for 2 servings
+- Snacks: mix of packaged and fresh, never hummus
+- Include a full step-by-step recipe with concise steps (one or two sentences each)
+- Also produce a grocery list for the one meal, categorised correctly
+
+Return ONLY a JSON object with no markdown formatting:
+{
+  "cuisine_theme": "Theme Name",
+  "meal": {
+    "name": "Dish Name",
+    "description": "One sentence. Note if marinating overnight.",
+    "time": "X minutes active cooking",
+    "ingredients": ["ingredient x qty", "ingredient x qty"],
+    "recipe": {
+      "prep_time": "X minutes",
+      "cook_time": "X minutes",
+      "steps": ["Step 1...", "Step 2..."],
+      "tip": "One optional tip — omit the key entirely if nothing worth adding."
+    }
+  },
+  "snacks": ["snack 1", "snack 2", "snack 3", "snack 4"],
+  "grocery_list": {
+    "Produce": ["item — qty"],
+    "Meat & Seafood": ["item — qty"],
+    "Dairy & Eggs": ["item — qty"],
+    "Pantry & Dry Goods": ["item — qty"],
+    "Canned & Jarred": ["item — qty"],
+    "Bread & Bakery": ["item — qty"],
+    "Frozen": ["item — qty"],
+    "Other": ["item — qty"]
+  }
+}"""
+
+
+def generate_demo_plan() -> dict:
+    """Generate a single-meal demo plan for the portfolio endpoint. Stateless — nothing is saved."""
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2048,
+        messages=[{"role": "user", "content": DEMO_PROMPT}],
+    )
+    plan = parse_ai_json(message.content[0].text)
+    grocery_list = plan.get("grocery_list", {})
+    if isinstance(grocery_list, dict):
+        plan["grocery_list"] = _fix_grocery_categories(grocery_list)
+    return plan
+
+
 def swap_ingredient_in_meal(meal_index: int, ingredient: str):
     """Keep the same meal but substitute a single ingredient."""
     plan = load_plan()

@@ -1,10 +1,17 @@
 import logging
+import time
+from collections import defaultdict
 
 from flask import Blueprint, jsonify, render_template, request
 
-from .generator import generate_meal_plan, regenerate_meal, swap_ingredient_in_meal
+from .generator import generate_demo_plan, generate_meal_plan, regenerate_meal, swap_ingredient_in_meal
 from .models import load_plan
 from .scheduler import scheduler
+
+# Simple in-process rate limiter: max 5 calls per IP per hour
+_demo_calls: dict[str, list[float]] = defaultdict(list)
+_DEMO_LIMIT = 5
+_DEMO_WINDOW = 3600  # seconds
 
 log = logging.getLogger("meal-planner")
 
@@ -80,6 +87,32 @@ def swap_ingredient():
 @bp.route("/plan")
 def get_plan():
     return jsonify(load_plan())
+
+
+@bp.route("/demo")
+def demo():
+    return render_template("demo.html")
+
+
+@bp.route("/demo/generate", methods=["POST"])
+def demo_generate():
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+    now = time.time()
+    window_start = now - _DEMO_WINDOW
+    _demo_calls[ip] = [t for t in _demo_calls[ip] if t > window_start]
+
+    if len(_demo_calls[ip]) >= _DEMO_LIMIT:
+        retry_after = int(_demo_calls[ip][0] + _DEMO_WINDOW - now) + 1
+        return jsonify({"error": f"Rate limit reached. Try again in {retry_after // 60} minutes."}), 429
+
+    _demo_calls[ip].append(now)
+
+    try:
+        plan = generate_demo_plan()
+        return jsonify(plan)
+    except Exception as e:
+        log.error(f"demo generate failed: {e}", exc_info=True)
+        return jsonify({"error": "Generation failed. Please try again."}), 500
 
 
 @bp.route("/health")
