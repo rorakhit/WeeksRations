@@ -12,8 +12,9 @@ NOTIFY_EMAIL = os.environ["NOTIFY_EMAIL"]
 EMAIL_FROM = os.environ.get("EMAIL_FROM", "Meal Planner <onboarding@resend.dev>")
 
 BASE_DIR = Path(__file__).parent.parent
-MEAL_PLAN_FILE = BASE_DIR / "current_meal_plan.json"
-MEAL_HISTORY_FILE = BASE_DIR / "meal_history.json"
+_DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
+MEAL_PLAN_FILE = _DATA_DIR / "current_meal_plan.json"
+MEAL_HISTORY_FILE = _DATA_DIR / "meal_history.json"
 
 ET = ZoneInfo("America/New_York")
 
